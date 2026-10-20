@@ -108,8 +108,15 @@ def get_model(device_str: str):
 
 def apply_thermal_colormap(gray_arr: np.ndarray, colormap_name: str = "inferno") -> np.ndarray:
     """Transform 1-channel thermal radiation to RGB pseudo-color."""
-    norm = gray_arr.astype(np.float32) / 255.0
-    cmap = cm.get_cmap(colormap_name)
+    norm = np.clip(gray_arr.astype(np.float32) / 255.0, 0.0, 1.0)
+    try:
+        import matplotlib as mpl
+        cmap = mpl.colormaps[colormap_name]
+    except Exception:
+        try:
+            cmap = cm.get_cmap(colormap_name)
+        except Exception:
+            return np.stack([gray_arr] * 3, axis=-1)
     colored = cmap(norm)[:, :, :3]
     return (colored * 255).astype(np.uint8)
 
@@ -146,68 +153,45 @@ st.markdown('<div class="sub-header">Real-time scene parsing using paired Visibl
 tab_app, tab_benchmark = st.tabs(["🚀 Run Segmentation", "📊 Model Performance"])
 
 with tab_app:
-    # Upload & Selection Zone
-    st.markdown("### 1. Provide Multispectral Input")
+    # Upload Input Zone
+    st.markdown("### 1. Upload Multispectral Input")
     
-    upload_type = st.radio(
-        "Select Upload Method:",
-        ["Upload Custom Images", "Try Preloaded Driving Samples"],
+    up_mode = st.radio(
+        "Upload Format:",
+        ["Single 4-Channel RGBT Image (.png)", "Two Separate Files (RGB Color + Thermal Grayscale)"],
         horizontal=True
     )
 
     rgb_array, thermal_array = None, None
     sample_name = "Uploaded_Scene"
 
-    if upload_type == "Upload Custom Images":
-        st.markdown("Upload either a **single 4-channel image** (RGB + Thermal in Alpha channel) or **two separate image files**:")
-        up_mode = st.radio("Upload Format:", ["Separate Files (RGB + Thermal)", "Single 4-Channel PNG"], horizontal=True)
-
-        if up_mode == "Separate Files (RGB + Thermal)":
-            col_up1, col_up2 = st.columns(2)
-            with col_up1:
-                f_rgb = st.file_uploader("Visible Camera (RGB Color Image)", type=["png", "jpg", "jpeg"])
-            with col_up2:
-                f_th = st.file_uploader("Thermal Camera (Grayscale / LWIR)", type=["png", "jpg", "jpeg"])
-
-            if f_rgb and f_th:
-                rgb_img = Image.open(f_rgb).convert("RGB").resize((640, 480))
-                th_img = Image.open(f_th).convert("L").resize((640, 480))
-                rgb_array = np.array(rgb_img)
-                thermal_array = np.array(th_img)
-                sample_name = os.path.splitext(f_rgb.name)[0]
-
-        else:
-            f_single = st.file_uploader("Upload 4-Channel RGBT Image (.png)", type=["png"])
-            if f_single:
-                img_4ch = Image.open(f_single)
-                if img_4ch.mode != "RGBA":
-                    st.error("Uploaded image must have 4 channels (RGBA).")
-                else:
-                    arr_4ch = np.array(img_4ch.resize((640, 480)))
-                    rgb_array = arr_4ch[:, :, :3]
-                    thermal_array = arr_4ch[:, :, 3]
-                    sample_name = os.path.splitext(f_single.name)[0]
+    if up_mode == "Single 4-Channel RGBT Image (.png)":
+        st.caption("Upload a single `.png` where channels 0, 1, 2 are Visible RGB and channel 3 is Thermal infrared.")
+        f_single = st.file_uploader("Upload 4-Channel RGBT Image (.png)", type=["png"])
+        if f_single:
+            img_4ch = Image.open(f_single)
+            if img_4ch.mode != "RGBA":
+                st.error("Uploaded image must have 4 channels (RGBA format).")
+            else:
+                arr_4ch = np.array(img_4ch.resize((640, 480)))
+                rgb_array = arr_4ch[:, :, :3]
+                thermal_array = arr_4ch[:, :, 3]
+                sample_name = os.path.splitext(f_single.name)[0]
 
     else:
-        # Preloaded samples from dataset
-        samples = [
-            ("00678N (🌙 Nighttime - High Thermal Contrast)", "00678N"),
-            ("00720N (🌙 Nighttime - Pedestrian Detection)", "00720N"),
-            ("00001D (☀️ Daytime - Urban Traffic)", "00001D"),
-            ("00055D (☀️ Daytime - Complex Driving Scene)", "00055D"),
-            ("01402D (☀️ Daytime - Road & Cyclists)", "01402D"),
-        ]
-        choice_label = st.selectbox("Choose a Benchmark Scene:", [s[0] for s in samples])
-        sample_code = next(s[1] for s in samples if s[0] == choice_label)
-        sample_name = sample_code
+        st.caption("Upload separate RGB and Thermal image files.")
+        col_up1, col_up2 = st.columns(2)
+        with col_up1:
+            f_rgb = st.file_uploader("1. Visible Camera (RGB Color Image)", type=["png", "jpg", "jpeg"])
+        with col_up2:
+            f_th = st.file_uploader("2. Thermal Camera (Grayscale / LWIR Image)", type=["png", "jpg", "jpeg"])
 
-        sample_img_path = os.path.join(cfg.dataset.dataset_root, "images", f"{sample_code}.png")
-        if os.path.exists(sample_img_path):
-            raw_4ch = np.array(Image.open(sample_img_path).convert("RGBA"))
-            rgb_array = raw_4ch[:, :, :3]
-            thermal_array = raw_4ch[:, :, 3]
-        else:
-            st.warning(f"Sample `{sample_img_path}` not found on local disk. Please use 'Upload Custom Images'.")
+        if f_rgb and f_th:
+            rgb_img = Image.open(f_rgb).convert("RGB").resize((640, 480))
+            th_img = Image.open(f_th).convert("L").resize((640, 480))
+            rgb_array = np.array(rgb_img)
+            thermal_array = np.array(th_img)
+            sample_name = os.path.splitext(f_rgb.name)[0]
 
     # --------------------------------------------------------------------------
     # Inference & Results
