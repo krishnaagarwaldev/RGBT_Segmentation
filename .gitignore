@@ -75,3 +75,6 @@ $RECYCLE.BIN/
 
 # Scripts
 scripts/
+test_samples/
+test_videos/
+*.mp4
