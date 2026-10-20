@@ -1,0 +1,77 @@
+# ==============================================================================
+# Git Ignore Configuration for RGBT Semantic Segmentation (CSFNet-1 & CSFNet-2)
+# ==============================================================================
+
+# --- Python Environment & Bytecode ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyd
+*.so
+
+# Virtual Environments
+pytorch_env/
+env/
+venv/
+ENV/
+.env/
+
+# --- Datasets ---
+# Exclude raw dataset images and ground truth masks (~several GBs)
+ir_seg_dataset/
+*.png_dataset/
+data/raw/
+
+# --- Pretrained Backbone Weight Archives ---
+# Downloadable on demand via scripts/download_weights.py
+pretrained/*.tar
+pretrained/*.tar.gz
+pretrained/*.zip
+
+# --- Temporary & Scratch Runs ---
+# Exclude test runs, smoke tests, and non-primary experiments
+runs/smoke_test/
+runs/test_run/
+runs/test_eval_compat/
+runs/dryrun_test/
+
+# Ignore secondary/intermediate checkpoints (keep best_model.pth)
+runs/**/last_model.pth
+runs/**/checkpoint_epoch_*.pth
+*.tmp
+
+# --- Results Archive (Pushed through runs/ instead) ---
+results/
+
+# --- Logs, Profilers & TensorBoard ---
+*.log
+*.out
+*.trace
+*.prof
+*.pt.trace.json
+events.out.tfevents.*
+
+# --- Jupyter Notebooks & Testing Cache ---
+.ipynb_checkpoints/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# --- Operating System & Desktop Files ---
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+$RECYCLE.BIN/
+*.bak
+*.orig
+*~
+
+# Visual Studio Code & JetBrains
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Scripts
+scripts/

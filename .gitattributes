@@ -1,0 +1,2 @@
+runs/csfnet1_mfnet/best_model.pth filter=lfs diff=lfs merge=lfs -text
+runs/csfnet2_pretrained/best_model.pth filter=lfs diff=lfs merge=lfs -text
