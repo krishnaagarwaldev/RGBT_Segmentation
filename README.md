@@ -1,4 +1,5 @@
 # Real-Time RGBT Semantic Segmentation: CSFNet-1 & CSFNet-2
+Live Demo - https://rgbt-segmentation.streamlit.app/
 
 PyTorch implementation and benchmark evaluation of **CSFNet** (Cosine Similarity Fusion Network) for real-time multispectral RGB-Thermal (RGBT) semantic segmentation on the MFNet dataset (`ir_seg_dataset/`).
 
